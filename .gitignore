@@ -1,0 +1,11 @@
+*.0
+*.lo
+*.la
+*.a
+Makefile
+Makefile.in
+.vscode
+build/
+bin/
+lib/
+third-party/
