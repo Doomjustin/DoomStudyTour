@@ -11,6 +11,7 @@
 #include <type_traits>
 
 #include "Queue.h"
+#include "FunctionWrapper.h"
 
 
 namespace DST {
@@ -86,53 +87,6 @@ public:
 } // namespace v1
 
 namespace v2 {
-
-// 感觉比函数指针的用法更麻烦点
-class FunctionWrapper {
-private:
-  struct ImplBase {
-    ~ImplBase() {}
-
-    virtual void call() = 0;
-  };
-
-  template<typename F>
-  struct ImplType: ImplBase {
-    F f;
-    ImplType(F&& func)
-      : f{ std::move(func) }
-    {}
-
-    void call() override { f(); }
-  };
-
-  std::unique_ptr<ImplBase> impl_;
-
-public:
-  template<typename F>
-  FunctionWrapper(F&& f)
-    : impl_{ new ImplType<F>(std::move(f)) }
-  {}
-
-  FunctionWrapper() = default;
-
-  FunctionWrapper(FunctionWrapper&& other)
-    : impl_{ std::move(other.impl_) }
-  {}
-
-  FunctionWrapper& operator=(FunctionWrapper&& other)
-  {
-    impl_ = std::move(other.impl_);
-    return *this;
-  }
-
-  FunctionWrapper(FunctionWrapper&) = delete;
-  FunctionWrapper(const FunctionWrapper&) = delete;
-  FunctionWrapper& operator=(const FunctionWrapper&) = delete;
-
-  void operator()() { impl_->call(); }
-};
-
 
 class ThreadPool {
 private:
