@@ -93,7 +93,7 @@ public:
   bool try_pop(T& value)
   {
     std::unique_ptr<Node> const old_head = try_pop_head(value);
-    return old_head;
+    return old_head == nullptr;
   }
 
   std::shared_ptr<T> wait_and_pop()
@@ -127,21 +127,6 @@ public:
     return head_.get() == get_tail();
   }
 };
-
-template<typename T>
-void ThreadsafeQueue<T>::push(T new_value)
-{
-  std::shared_ptr<T> new_data{ std::make_shared<T>(std::move(new_value)) };
-  std::unique_ptr<Node> p{ new Node{} };
-  {
-    std::lock_guard<std::mutex> tail_lock{ tail_mutex_ };
-    tail_->data = new_data;
-    Node* const new_tail = p.get();
-    tail_->next = std::move(p);
-    tail_ = new_tail;
-    condition_.notify_one();
-  }
-}
 
 } // namespace DST
 
