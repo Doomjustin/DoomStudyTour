@@ -16,11 +16,11 @@ template<typename F>
 
   FunctionWrapper() = default;
 
-  FunctionWrapper(FunctionWrapper&& other)
+  FunctionWrapper(FunctionWrapper&& other) noexcept
     : impl_{ std::move(other.impl_) }
   {}
 
-  FunctionWrapper& operator=(FunctionWrapper&& other)
+  FunctionWrapper& operator=(FunctionWrapper&& other) noexcept
   {
     impl_ = std::move(other.impl_);
     return *this;
@@ -30,7 +30,7 @@ template<typename F>
   FunctionWrapper(const FunctionWrapper&) = delete;
   FunctionWrapper& operator=(const FunctionWrapper&) = delete;
 
-  void operator()() { impl_->call(); }
+  void operator()() const { impl_->call(); }
 
 private:
   struct ImplBase {
@@ -41,15 +41,17 @@ private:
 
   template<typename F>
   struct ImplType: ImplBase {
-    F invoker_;
+    F f_;
 
     ImplType(F&& f)
-      : invoker_{ std::forward<F>(f) }
+      : f_{ std::move(f) }
     {}
+
+    ~ImplType() {}
 
     void call() override
     {
-      invoker_();
+      f_();
     }
   };
 
