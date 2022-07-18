@@ -11,7 +11,7 @@ class FunctionWrapper {
 public:
 template<typename F>
   FunctionWrapper(F&& f)
-    : impl_{ new ImplType<F>(std::move(f)) }
+    : impl_{ new Callable<F>(std::move(f)) }
   {}
 
   FunctionWrapper() = default;
@@ -28,26 +28,25 @@ template<typename F>
 
   FunctionWrapper(FunctionWrapper&) = delete;
   FunctionWrapper(const FunctionWrapper&) = delete;
-  FunctionWrapper& operator=(const FunctionWrapper&) = delete;
 
   void operator()() const { impl_->call(); }
 
 private:
-  struct ImplBase {
-    ~ImplBase() {}
+  struct CallableBase {
+    ~CallableBase() {}
 
     virtual void call() = 0;
   };
 
   template<typename F>
-  struct ImplType: ImplBase {
+  struct Callable: CallableBase {
     F f_;
 
-    ImplType(F&& f)
+    explicit Callable(F&& f)
       : f_{ std::move(f) }
     {}
 
-    ~ImplType() {}
+    ~Callable() {}
 
     void call() override
     {
@@ -55,7 +54,7 @@ private:
     }
   };
 
-  std::unique_ptr<ImplBase> impl_;
+  std::unique_ptr<CallableBase> impl_;
 };
 
 

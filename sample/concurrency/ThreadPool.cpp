@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <queue>
 
 #include <fmt/format.h>
 
@@ -11,7 +12,7 @@ int main()
 
   auto res = pool.submit([] { return 10; });
 
-  fmt::print("result = {}", res.get());
+  fmt::print("result = {}\n", res.get());
 
   return EXIT_SUCCESS;
 }

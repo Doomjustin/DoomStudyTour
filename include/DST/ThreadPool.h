@@ -5,60 +5,56 @@
 #include <thread>
 #include <future>
 #include <vector>
-#include <functional>
+#include <queue>
 #include <memory>
 #include <utility>
-#include <type_traits>
+#include <functional>
+#include <condition_variable>
+#include <mutex>
 
-#include "Queue.h"
 #include "FunctionWrapper.h"
+#include "JoinerThreads.h"
 
 
 namespace DST {
 
-class JoinerThreads {
-private:
-  std::vector<std::thread>& threads_;
-
-public:
-  explicit JoinerThreads(std::vector<std::thread>& threads)
-    : threads_{ threads }
-  {}
-
-  ~JoinerThreads()
-  {
-    for (auto& t: threads_)
-      if (t.joinable())
-        t.join();
-  }
-};
-
-
 class ThreadPool {
 private:
+  using task_type = std::function<void()>;
   std::atomic<bool> done_;
-  ThreadsafeQueue<FunctionWrapper> tasks_;
+  std::queue<task_type> tasks_;
   std::vector<std::thread> threads_;
   JoinerThreads joiner_;
+  std::mutex mutex_;
+  std::condition_variable cv_;
+
+  task_type get_pending_task()
+  {
+    std::unique_lock<std::mutex> lock{ mutex_ };
+    cv_.wait(lock, [this]{ return !tasks_.empty(); });
+    auto task = std::move(tasks_.front());
+    tasks_.pop();
+
+    return std::move(task);
+  }
 
   void work_thread()
   {
     while (!done_) {
-      FunctionWrapper task;
-      if (tasks_.try_pop(task))
-        task();
-      else
-        std::this_thread::yield();
+      auto pending_task = std::move(get_pending_task());
+      if (pending_task)
+        pending_task();
     }
   }
 
 public:
   ThreadPool()
-    : done_{ false }, joiner_{ threads_ }
-  {
-    auto size = std::thread::hardware_concurrency() == 0 ?
-        4 : std::thread::hardware_concurrency();
+    : ThreadPool{ std::thread::hardware_concurrency() }
+  {}
 
+  explicit ThreadPool(std::size_t size)
+    : done_{ false }, threads_(size), joiner_{ threads_ }
+  {
     try {
       for (auto i = 0; i < size; ++i)
         threads_.emplace_back(&ThreadPool::work_thread, this);
@@ -69,28 +65,29 @@ public:
     }
   }
 
-  template<typename FunctionType>
-  auto submit(FunctionType&& f)
-    -> std::future<std::invoke_result_t<FunctionType>>
+  ~ThreadPool()
   {
-    using result_type = std::invoke_result_t<FunctionType>;
-
-    std::packaged_task<result_type()> task{ std::move(f) };
-
-    auto result = task.get_future();
-
-    tasks_.push(std::move(task));
-
-    return result;
+    done_ = true;
   }
 
-  void run_pending_task()
+  template<typename F, typename... Args>
+  auto submit(F&& f, Args&&... args)
+    -> std::future<decltype(f(args...))>
   {
-    FunctionWrapper task;
-    if (tasks_.try_pop(task))
-      task();
-    else
-      std::this_thread::yield();
+    using result_type = decltype(f(args...));
+
+    auto task = std::make_shared<std::packaged_task<result_type()>>(
+          std::bind(std::forward<F>(f), std::forward<Args>(args)...)
+    );
+
+    std::future<result_type> result = task->get_future();
+    {
+      std::lock_guard<std::mutex> lock{ mutex_ };
+      tasks_.emplace([task] { (*task)(); });
+    }
+    cv_.notify_all();
+
+    return result;
   }
 };
 
