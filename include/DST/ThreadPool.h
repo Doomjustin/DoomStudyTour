@@ -12,52 +12,30 @@
 #include <condition_variable>
 #include <mutex>
 
-#include "FunctionWrapper.h"
+#include <fmt/format.h>
+
 #include "JoinerThreads.h"
+#include "FunctionWrapper.h"
 
 
 namespace DST {
 
 class ThreadPool {
-private:
-  using task_type = std::function<void()>;
-  std::atomic<bool> done_;
-  std::queue<task_type> tasks_;
-  std::vector<std::thread> threads_;
-  JoinerThreads joiner_;
-  std::mutex mutex_;
-  std::condition_variable cv_;
-
-  task_type get_pending_task()
-  {
-    std::unique_lock<std::mutex> lock{ mutex_ };
-    cv_.wait(lock, [this]{ return !tasks_.empty(); });
-    auto task = std::move(tasks_.front());
-    tasks_.pop();
-
-    return std::move(task);
-  }
-
-  void work_thread()
-  {
-    while (!done_) {
-      auto pending_task = std::move(get_pending_task());
-      if (pending_task)
-        pending_task();
-    }
-  }
-
 public:
+  using size_type = decltype(std::thread::hardware_concurrency());
+
   ThreadPool()
     : ThreadPool{ std::thread::hardware_concurrency() }
   {}
 
-  explicit ThreadPool(std::size_t size)
-    : done_{ false }, threads_(size), joiner_{ threads_ }
+  ThreadPool(size_type size)
+    : done_{ false },
+      threads_(size),
+      joiner_{ threads_ }
   {
     try {
-      for (auto i = 0; i < size; ++i)
-        threads_.emplace_back(&ThreadPool::work_thread, this);
+      for (auto i = 0; i < threads_.size(); ++i)
+        threads_.emplace_back(&ThreadPool::schedule, this);
     }
     catch (...) {
       done_ = true;
@@ -65,29 +43,45 @@ public:
     }
   }
 
-  ~ThreadPool()
+  template<typename F>
+  std::future<std::invoke_result_t<F>>
+    submit(F f)
   {
-    done_ = true;
+    using result_type = std::invoke_result_t<F>;
+    std::packaged_task<result_type()> task { std::move(f) };
+    auto res = task.get_future();
+    {
+      std::lock_guard<std::mutex> lock{ m_ };
+      tasks_.push(std::move(task));
+    }
+    cv_.notify_one();
+
+    return res;
   }
 
-  template<typename F, typename... Args>
-  auto submit(F&& f, Args&&... args)
-    -> std::future<decltype(f(args...))>
+private:
+  std::atomic<bool> done_;
+  std::mutex m_;
+  std::condition_variable cv_;
+  std::queue<FunctionWrapper> tasks_;
+  std::vector<std::thread> threads_;
+  JoinerThreads joiner_;
+
+  FunctionWrapper get_pending_task()
   {
-    using result_type = decltype(f(args...));
+    std::unique_lock<std::mutex> lock{ m_ };
+    cv_.wait(lock, [this] { return !tasks_.empty(); });
 
-    auto task = std::make_shared<std::packaged_task<result_type()>>(
-          std::bind(std::forward<F>(f), std::forward<Args>(args)...)
-    );
+    auto task = std::move(tasks_.front());
+    tasks_.pop();
 
-    std::future<result_type> result = task->get_future();
-    {
-      std::lock_guard<std::mutex> lock{ mutex_ };
-      tasks_.emplace([task] { (*task)(); });
-    }
-    cv_.notify_all();
+    return task;
+  }
 
-    return result;
+  void schedule()
+  {
+    auto task = get_pending_task();
+    task();
   }
 };
 

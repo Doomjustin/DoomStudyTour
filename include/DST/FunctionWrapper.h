@@ -11,7 +11,7 @@ class FunctionWrapper {
 public:
 template<typename F>
   FunctionWrapper(F&& f)
-    : impl_{ new Callable<F>(std::move(f)) }
+    : impl_{ new Callable<F>{ std::move(f) } }
   {}
 
   FunctionWrapper() = default;

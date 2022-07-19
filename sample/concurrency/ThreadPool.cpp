@@ -8,7 +8,7 @@
 
 int main()
 {
-  DST::ThreadPool pool {};
+  DST::ThreadPool pool { 2 };
 
   auto res = pool.submit([] { return 10; });
 
