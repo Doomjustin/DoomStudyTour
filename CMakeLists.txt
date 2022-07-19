@@ -19,6 +19,8 @@ include(AddFmt)
 include(AddSpdlog)
 # include(AddBoost)
 include(AddCatch2)
+include(AddGLFW)
+
 
 # 标准库thread需要手动连接Threads::Threads
 find_package(Threads REQUIRED)
