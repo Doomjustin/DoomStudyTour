@@ -6,9 +6,10 @@
 #include <sstream>
 
 #include <fmt/format.h>
+#include <glad/glad.h>
 
 
-Shader::Shader(std::string_view file_path)\
+Shader::Shader(std::string_view file_path)
   : id_{ 0 }
 {
   std::ifstream fs{};
@@ -106,7 +107,7 @@ void ShaderProgram::set_uniform(std::string_view name, int value) const noexcept
 
 void ShaderProgram::set_uniform(std::string_view name, float value) const noexcept
 {
-  glUniform1i(glGetUniformLocation(id_, name.data()), value);
+  glUniform1f(glGetUniformLocation(id_, name.data()), value);
 }
 
 void ShaderProgram::use() const noexcept

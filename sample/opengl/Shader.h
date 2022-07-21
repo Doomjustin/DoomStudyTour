@@ -1,8 +1,6 @@
 #ifndef DOOM_STUDY_TOUR_OPENGL_SHADER_H
 #define DOOM_STUDY_TOUR_OPENGL_SHADER_H
 
-#include <glad/glad.h>
-
 #include <string>
 
 
