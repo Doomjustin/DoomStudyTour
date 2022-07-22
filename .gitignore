@@ -9,8 +9,3 @@ build/
 bin/
 lib/
 third-party/
-
-*.fs
-*.vs
-*.jpg
-*.png
