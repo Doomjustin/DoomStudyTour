@@ -7,6 +7,6 @@ add_library(LearnOpenGL
   stb_image.cpp
 )
 
-link_libraries(OpenGL::GL glad glfw LearnOpenGL)
+link_libraries(OpenGL::GL glad glfw LearnOpenGL glm)
 
 add_subdirectory(chapter1)

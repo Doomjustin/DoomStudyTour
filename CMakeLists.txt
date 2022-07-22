@@ -20,6 +20,7 @@ include(AddSpdlog)
 # include(AddBoost)
 include(AddCatch2)
 include(AddGLFW)
+include(AddGLM)
 
 
 # 标准库thread需要手动连接Threads::Threads

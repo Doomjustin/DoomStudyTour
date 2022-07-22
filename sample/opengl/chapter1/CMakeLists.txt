@@ -11,3 +11,6 @@ add_executable(shader2 shader2.cpp)
 add_executable(shader3 shader3.cpp)
 
 add_executable(test-stb test_stb.cpp)
+add_executable(texture texture.cpp)
+
+add_executable(test-glm test_glm.cpp)
