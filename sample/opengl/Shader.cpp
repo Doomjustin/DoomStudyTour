@@ -110,6 +110,12 @@ void ShaderProgram::set_uniform(std::string_view name, float value) const noexce
   glUniform1f(glGetUniformLocation(id_, name.data()), value);
 }
 
+void ShaderProgram::set_uniform(std::string_view name, int count, bool transpose, const float* value)
+{
+  glUniformMatrix4fv(glGetUniformLocation(id_, name.data()), count, transpose, value);
+}
+
+
 void ShaderProgram::use() const noexcept
 {
   glUseProgram(id_);

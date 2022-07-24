@@ -14,3 +14,6 @@ add_executable(test-stb test_stb.cpp)
 add_executable(texture texture.cpp)
 
 add_executable(test-glm test_glm.cpp)
+add_executable(translate translate.cpp)
+add_executable(coordinate coordinate.cpp)
+add_executable(camera camera.cpp)

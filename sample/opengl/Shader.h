@@ -45,6 +45,9 @@ public:
   void set_uniform(std::string_view name, bool value) const noexcept;
   void set_uniform(std::string_view name, int value) const noexcept;
   void set_uniform(std::string_view name, float value) const noexcept;
+  void set_uniform(std::string_view name, int count, bool transpose, const float* value);
+
+  unsigned get_id() const noexcept { return id_; }
 
 private:
   unsigned id_;

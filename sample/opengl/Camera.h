@@ -1,0 +1,7 @@
+#ifndef DOOM_STUDY_TOUR_CAMERA_H
+#define DOOM_STUDY_TOUR_CAMERA_H
+
+
+
+
+#endif // DOOM_STUDY_TOUR_CAMERA_H

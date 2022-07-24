@@ -5,8 +5,12 @@ add_library(LearnOpenGL
   Shader.cpp
   stb_image.h
   stb_image.cpp
+  Camera.h
+  Camera.cpp
 )
 
-link_libraries(OpenGL::GL glad glfw LearnOpenGL glm)
+target_link_libraries(LearnOpenGL PUBLIC OpenGL::GL glfw glad glm)
+
+link_libraries(LearnOpenGL)
 
 add_subdirectory(chapter1)
